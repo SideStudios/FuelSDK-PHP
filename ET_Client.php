@@ -4,7 +4,7 @@ require('JWT.php');
 
 class ET_Client extends SoapClient {
 	public $packageName, $packageFolders, $parentFolders;
-	private $wsdlLoc, $debugSOAP, $lastHTTPCode, $clientId, 
+	private $wsdlLoc, $localWsdl, $debugSOAP, $lastHTTPCode, $clientId, 
 			$clientSecret, $appsignature, $endpoint, 
 			$tenantTokens, $tenantKey;
 		
@@ -16,12 +16,14 @@ class ET_Client extends SoapClient {
 			$this->clientId = $config['clientid'];
 			$this->clientSecret = $config['clientsecret'];
 			$this->appsignature = $config['appsignature'];
+			$this->localWsdl = $config['local_wsdl'];
 		} else {
 			if ($params && array_key_exists('defaultwsdl', $params)){$this->wsdlLoc = $params['defaultwsdl'];}
 			else {$this->wsdlLoc = "https://webservice.exacttarget.com/etframework.wsdl";}
 			if ($params && array_key_exists('clientid', $params)){$this->clientId = $params['clientid'];}
 			if ($params && array_key_exists('clientsecret', $params)){$this->clientSecret = $params['clientsecret'];}
 			if ($params && array_key_exists('appsignature', $params)){$this->appsignature = $params['appsignature'];}
+			if ($params && array_key_exists('local_wsdl', $params)){$this->localWsdl = $params['local_wsdl'];}
 		}
 		
 		$this->debugSOAP = $debug;
@@ -58,13 +60,13 @@ class ET_Client extends SoapClient {
 			} catch (Exception $e) {
 			throw new Exception('Unable to determine stack using /platform/v1/endpoints/: '.$e->getMessage());
 		} 		
-		parent::__construct('ExactTargetWSDL.xml', array('trace'=>1, 'exceptions'=>0));
+		parent::__construct($this->localWsdl, array('trace'=>1, 'exceptions'=>0));
 		parent::__setLocation($this->endpoint);
 	}
 	
 	function refreshToken($forceRefresh = false) {
 		if (property_exists($this, "sdl") && $this->sdl == 0){
-			parent::__construct('ExactTargetWSDL.xml', array('trace'=>1, 'exceptions'=>0));	
+			parent::__construct($this->localWsdl, array('trace'=>1, 'exceptions'=>0));	
 		}
 		try {
 			$currentTime = new DateTime();
@@ -119,8 +121,8 @@ class ET_Client extends SoapClient {
 			
 			$remoteTS = $this->GetLastModifiedDate($wsdlLoc);
 			
-			if (file_exists("ExactTargetWSDL.xml")){
-				$localTS = filemtime("ExactTargetWSDL.xml");
+			if (file_exists($this->localWsdl)){
+				$localTS = filemtime($this->localWsdl);
 				if ($remoteTS <= $localTS) 
 				{
 					$getNewWSDL = false;
@@ -128,8 +130,8 @@ class ET_Client extends SoapClient {
 			}
 			
 			if ($getNewWSDL){
-				$newWSDL = file_gET_contents($wsdlLoc);
-				file_put_contents("ExactTargetWSDL.xml", $newWSDL);
+				$newWSDL = file_get_contents($wsdlLoc);
+				file_put_contents($this->localWsdl, $newWSDL);
 			}	
 		}
 		catch (Exception $e) {
