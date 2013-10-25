@@ -154,7 +154,7 @@ class ET_Client extends SoapClient {
 		return curl_getinfo($curl, CURLINFO_FILETIME);
 	}
 				
-	function __doRequest($request, $location, $saction, $version) {
+	function __doRequest($request, $location, $action, $version, $one_way = 0) {
 		$doc = new DOMDocument();
 		$doc->loadXML($request);
 		
@@ -169,7 +169,7 @@ class ET_Client extends SoapClient {
 			error_log (str_replace($this->getInternalAuthToken($this->tenantKey),"REMOVED",$content));
 		}
 		
-		$headers = array("Content-Type: text/xml","SOAPAction: ".$saction, "User-Agent: ".getSDKVersion());
+		$headers = array("Content-Type: text/xml","SOAPAction: ".$action, "User-Agent: ".getSDKVersion());
 
 		$ch = curl_init();
 		curl_setopt ($ch, CURLOPT_URL, $location);
